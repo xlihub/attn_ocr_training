@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+tutorials/train/instance_segmentation/base
+tutorials/train/instance_segmentation/CPA
+tutorials/train/instance_segmentation/dataset_coco
+tutorials/train/instance_segmentation/inference_model
+tutorials/train/instance_segmentation/maskrcnn_serving_client
+tutorials/train/instance_segmentation/output
+tutorials/train/instance_segmentation/maskrcnn_serving_server
+tutorials/train/instance_segmentation/new
+CPA.tar.gz
+donefile

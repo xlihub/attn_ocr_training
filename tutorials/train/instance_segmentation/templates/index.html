@@ -1,0 +1,351 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>ATTN OCR</title>
+    <style>
+        .progress {
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+  </head>
+  <body>
+    <h1>ATTN OCR 训练平台</h1>
+    <h2>1: 模型检测(检测系统是否已支持此类图片)</h2>
+    <input id="first_pic"  name="loadfile"  type="file" accept="image/png,image/jpeg">
+    <div id="first_progress">
+      <div id="first_bar_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
+    </div>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
+    <script>
+      $('#first_pic').change(function (e) {
+        // // add task status elements
+        // div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>');
+        // $('#res_progress').append(div);
+        console.log($('#first_bar_progress'))
+        console.log($('#first_bar_progress')[0])
+        var bar = $('#first_bar_progress')[0]
+        // create a progress bar
+        var nanobar = new Nanobar({
+            bg: '#44f',
+            target: bar.childNodes[0]
+        });
+        nanobar.go(0);
+        $(bar.childNodes[1]).text('0%');
+        $(bar.childNodes[2]).text('正在识别，请稍后...');
+        bar.childNodes[3].style = 'text-align:left;width: 100%;word-break: break-all;white-space: pre-line;'
+        $(bar.childNodes[3]).text('');
+        console.log($(bar.childNodes[3]))
+         var files = e.target.files;
+         var formFile = new FormData();
+         if (files.length > 0) {
+           formFile.append("file", files[0]); //加入文件对象
+           $.ajax({
+             url: "/ocr_model_pic",
+             data: formFile,
+             type: "post",
+             dataType: "json",
+             cache: false,//上传文件无需缓存
+             processData: false,//用于对data参数进行序列化处理 这里必须false
+             contentType: false, //必须
+             success: function (result) {
+               nanobar.go(100);
+               console.log(result)
+               if (Array.isArray(result)){
+                  var textTitle = '共识别出' + result.length + '张图片\n'
+                  var text = textTitle
+                  result.forEach((item, index) =>{
+                    var type = item['type']
+                    var info = item['info']
+                    var extra = result['extra']
+                    text += '第' + (index+1) + '张' + '图片\n类型为:' + type + "\n识别结果为:" + info + "\n" + "\n附加信息为:" + extra + "\n"
+                  })
+                  $(bar.childNodes[1]).text('100%');
+                  $(bar.childNodes[2]).text('识别完成');
+                  $(bar.childNodes[3]).text(text);
+               }else {
+                  var type = result['type']
+                  var info = result['info']
+                  var extra = result['extra']
+                  console.log(info)
+                  if (type === 'unknown'){
+                    $(bar.childNodes[1]).text('100%');
+                    $(bar.childNodes[2]).text('暂不支持此类图片');
+                  } else {
+                    var text = '图片类型为:' + type + "\n识别结果为:" + info + "\n附加信息为:" + extra
+                    $(bar.childNodes[1]).text('100%');
+                    $(bar.childNodes[2]).text('识别完成');
+                    $(bar.childNodes[3]).text(text);
+                  }
+               }
+             },
+         })
+         } else {
+           alert('请选择图片')
+           $(bar.childNodes[1]).text('0%');
+           $(bar.childNodes[2]).text('...');
+         }
+      });
+    </script>
+    <hr>
+    <h2>2: 上传图片数据集</h2>
+    <input id="file"  name="loadfile"  type="file" accept="application/zip">
+    <div id="zip_progress">
+      <div id="zip_file_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
+    </div>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
+    <script>
+      $('#file').change(function (e) {
+         var files = e.target.files;
+         var formFile = new FormData();
+         var bar = $('#zip_file_progress')[0]
+          // create a progress bar
+          var nanobar = new Nanobar({
+              bg: '#44f',
+              target: bar.childNodes[0]
+          });
+          nanobar.go(0);
+          $(bar.childNodes[1]).text('0%');
+          $(bar.childNodes[2]).text('正在上传，请稍后...');
+         formFile.append("file", files[0]); //加入文件对象
+          $.ajax({
+             url: "/upload_file",
+             data: formFile,
+             type: "post",
+             dataType: "json",
+             cache: false,//上传文件无需缓存
+             processData: false,//用于对data参数进行序列化处理 这里必须false
+             contentType: false, //必须
+             xhr: function() {
+                var xhr = new XMLHttpRequest();
+                //使用XMLHttpRequest.upload监听上传过程，注册progress事件，打印回调函数中的event事件
+                xhr.upload.addEventListener('progress', function (e) {
+                    console.log(e);
+                    //loaded代表上传了多少
+                    //total代表总数为多少
+                    var progressRate = (e.loaded / e.total) * 100;
+                    progressRate = parseInt(progressRate)
+                    nanobar.go(progressRate);
+                    $(bar.childNodes[1]).text(progressRate + '%');
+                })
+                return xhr;
+             },
+             success: function (result) {
+                 $(bar.childNodes[2]).text('上传完成');
+                 console.log($('#start-bg-job'))
+                 var btn = $('#start-bg-job')[0]
+                 btn.disabled = false
+                 var st_btn = $('#stop-bg-job')[0]
+                 st_btn.disabled = false
+             },
+         })
+      });
+    </script>
+    <hr>
+    <h2>3: 模型训练</h2>
+    <!--<button onclick="start_long_task();">Start Long Calculation</button><br><br>-->
+    <button id="start-bg-job" disabled>立即训练</button>
+    <button id="stop-bg-job" disabled>停止训练</button><br><br>
+    <div id="progress"></div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script>
+        function start_long_task() {
+            // send ajax POST request to start background job
+            $.ajax({
+                type: 'POST',
+                url: '/longtask',
+                success: function(data, status, request) {
+                    console.log(data)
+                    console.log(status)
+                    console.log(request)
+                    if(request.status === 200){
+                      alert(data['result']);
+                    }else if (request.status === 202) {
+                      // add task status elements
+                      div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>');
+                      $('#progress').append(div);
+
+                      // create a progress bar
+                      var nanobar = new Nanobar({
+                          bg: '#44f',
+                          target: div[0].childNodes[0]
+                      });
+                      status_url = request.getResponseHeader('Location');
+                      update_progress(status_url, nanobar, div[0]);
+                    }
+                },
+                error: function() {
+                    alert('Unexpected error');
+                }
+            });
+        }
+        function update_progress(status_url, nanobar, status_div) {
+            // send GET request to status URL
+            $.getJSON(status_url, function(data) {
+                // update UI
+                percent = parseInt(data['current'] * 100 / data['total']);
+                nanobar.go(percent);
+                $(status_div.childNodes[1]).text(percent + '%');
+                $(status_div.childNodes[2]).text(data['status']);
+                if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
+                    if ('result' in data) {
+                        // show result
+                        $(status_div.childNodes[3]).text('Result: ' + data['result']);
+                    }
+                    else {
+                        // something unexpected happened
+                        $(status_div.childNodes[3]).text('Result: ' + data['state']);
+                    }
+                }
+                else {
+                    // rerun in 2 seconds
+                    setTimeout(function() {
+                        update_progress(status_url, nanobar, status_div);
+                    }, 2000);
+                }
+            });
+        }
+        $(function() {
+            $('#start-bg-job').click(start_long_task);
+        });
+        $(function() {
+            $('#stop-bg-job').click(stop_long_task);
+        });
+        function stop_long_task() {
+            // send ajax POST request to start background job
+            $.ajax({
+                type: 'POST',
+                url: '/stop_longtask',
+                success: function(data, status, request) {
+                    console.log(data)
+                    console.log(status)
+                    console.log(request)
+                    // if(request.status === 200){
+                    //   alert(data['result']);
+                    // }
+                },
+                error: function() {
+                    alert('Unexpected error');
+                }
+            });
+        }
+    </script>
+    <hr>
+    <h2>4: 上传识别模板</h2>
+    <input id="temp_file"  name="loadfile"  type="file" accept="application/json">
+    <div id="temp_progress">
+      <div id="temp_file_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
+    </div>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
+    <script>
+      $('#temp_file').change(function (e) {
+         var files = e.target.files;
+         var formFile = new FormData();
+         var bar = $('#temp_file_progress')[0]
+          // create a progress bar
+          var nanobar = new Nanobar({
+              bg: '#44f',
+              target: bar.childNodes[0]
+          });
+          nanobar.go(0);
+          $(bar.childNodes[1]).text('0%');
+          $(bar.childNodes[2]).text('正在上传，请稍后...');
+         formFile.append("file", files[0]); //加入文件对象
+          $.ajax({
+             url: "/upload_temp_file",
+             data: formFile,
+             type: "post",
+             dataType: "json",
+             cache: false,//上传文件无需缓存
+             processData: false,//用于对data参数进行序列化处理 这里必须false
+             contentType: false, //必须
+             xhr: function() {
+                var xhr = new XMLHttpRequest();
+                //使用XMLHttpRequest.upload监听上传过程，注册progress事件，打印回调函数中的event事件
+                xhr.upload.addEventListener('progress', function (e) {
+                    console.log(e);
+                    //loaded代表上传了多少
+                    //total代表总数为多少
+                    var progressRate = (e.loaded / e.total) * 100;
+                    progressRate = parseInt(progressRate)
+                    nanobar.go(progressRate);
+                    $(bar.childNodes[1]).text(progressRate + '%');
+                })
+                return xhr;
+             },
+             success: function (result) {
+                 $(bar.childNodes[2]).text('上传完成');
+             },
+         })
+      });
+    </script>
+    <hr>
+    <h2>5: 模型验证</h2>
+    <input id="pic"  name="loadfile"  type="file" accept="image/png,image/jpeg">
+    <div id="res_progress">
+      <div id="bar_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
+    </div>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
+    <script>
+      $('#pic').change(function (e) {
+        // // add task status elements
+        // div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>');
+        // $('#res_progress').append(div);
+        console.log($('#bar_progress'))
+        console.log($('#bar_progress')[0])
+        var bar = $('#bar_progress')[0]
+        // create a progress bar
+        var nanobar = new Nanobar({
+            bg: '#44f',
+            target: bar.childNodes[0]
+        });
+        nanobar.go(0);
+        $(bar.childNodes[1]).text('0%');
+        $(bar.childNodes[2]).text('正在识别，请稍后...');
+        bar.childNodes[3].style = 'text-align:left;width: 100%;word-break: break-all;white-space: pre-line;'
+        $(bar.childNodes[3]).text('');
+        console.log($(bar.childNodes[3]))
+         var files = e.target.files;
+         var formFile = new FormData();
+         formFile.append("file", files[0]); //加入文件对象
+          $.ajax({
+             url: "/ocr_model_pic",
+             data: formFile,
+             type: "post",
+             dataType: "json",
+             cache: false,//上传文件无需缓存
+             processData: false,//用于对data参数进行序列化处理 这里必须false
+             contentType: false, //必须
+             success: function (result) {
+               nanobar.go(100);
+               console.log(result)
+               if (Array.isArray(result)){
+                  var textTitle = '共识别出' + result.length + '张图片\n'
+                  var text = textTitle
+                  result.forEach((item, index) =>{
+                    var type = item['type']
+                    var info = item['info']
+                    var extra = result['extra']
+                    text += '第' + (index+1) + '张' + '图片\n类型为:' + type + "\n识别结果为:" + info + "\n" + "\n附加信息为:" + extra + "\n"
+                  })
+                  $(bar.childNodes[1]).text('100%');
+                  $(bar.childNodes[2]).text('识别完成');
+                  $(bar.childNodes[3]).text(text);
+               }else {
+                  console.log(result)
+                  var type = result['type']
+                  var info = result['info']
+                  var extra = result['extra']
+                  var text = '图片类型为:' + type + "\n识别结果为:" + info + "\n附加信息为:" + extra
+                  $(bar.childNodes[1]).text('100%');
+                  $(bar.childNodes[2]).text('识别完成');
+                  $(bar.childNodes[3]).text(text);
+               }
+             },
+         })
+      });
+    </script>
+    <hr>
+  </body>
+</html>
