@@ -31,6 +31,7 @@ import logging.handlers
 import requests
 import json
 from json import JSONEncoder
+from tutorials.train.instance_segmentation.app import logger
 
 
 class CustomEncoder(JSONEncoder):
@@ -521,13 +522,16 @@ class TrainLogReader(object):
         self.eta = None
         self.train_metrics = None
         self.eval_metrics = None
+        self.best_eval_metrics = None
         self.download_status = None
         self.eval_done = False
         self.train_error = None
         self.train_stage = None
         self.running_duration = None
+        logger.info(self)
 
     def update(self):
+        logger.info(self)
         if not osp.exists(self.log_file):
             return
         if self.train_stage == "Train Error":
@@ -540,6 +544,7 @@ class TrainLogReader(object):
         self.eta = None
         self.train_metrics = None
         self.eval_metrics = None
+        self.best_eval_metrics = None
         if self.download_status != "Done":
             self.download_status = None
 
@@ -626,6 +631,25 @@ class TrainLogReader(object):
                             else:
                                 value = int(value)
                             self.eval_metrics[name] = value
+                        except:
+                            pass
+
+                if self.best_eval_metrics is None:
+                    if line.count('[INFO]') > 0 and line.count(
+                            'Current evaluated best model') > 0:
+                        # if line.strip().find('Current evaluated best model') == -1:
+                        #     continue
+                        try:
+                            for item in items:
+                                epoch = item.find('epoch')
+                                if not epoch == -1:
+                                    best_epoch = item[:-1]
+                                bbox = item.find('bbox_mmap')
+                                if not bbox == -1:
+                                    best_bbox = round(float(item.split('=')[1]), 6)
+                            self.best_eval_metrics = dict()
+                            self.best_eval_metrics['best_epoch'] = best_epoch
+                            self.best_eval_metrics['best_bbox'] = best_bbox
                         except:
                             pass
 

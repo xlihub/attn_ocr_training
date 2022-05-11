@@ -8,6 +8,7 @@
             text-align: center;
         }
     </style>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
   </head>
   <body>
     <h1>ATTN OCR 训练平台</h1>
@@ -16,7 +17,6 @@
     <div id="first_progress">
       <div id="first_bar_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
     </div>
-    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
     <script>
       $('#first_pic').change(function (e) {
         // // add task status elements
@@ -31,7 +31,7 @@
             target: bar.childNodes[0]
         });
         nanobar.go(0);
-        $(bar.childNodes[1]).text('0%');
+        $(bar.childNodes[1]).text('0%')
         $(bar.childNodes[2]).text('正在识别，请稍后...');
         bar.childNodes[3].style = 'text-align:left;width: 100%;word-break: break-all;white-space: pre-line;'
         $(bar.childNodes[3]).text('');
@@ -93,7 +93,6 @@
     <div id="zip_progress">
       <div id="zip_file_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
     </div>
-    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
     <script>
       $('#file').change(function (e) {
          var files = e.target.files;
@@ -148,7 +147,6 @@
     <button id="stop-bg-job" disabled>停止训练</button><br><br>
     <div id="progress"></div>
     <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script>
         function start_long_task() {
             // send ajax POST request to start background job
@@ -163,7 +161,7 @@
                       alert(data['result']);
                     }else if (request.status === 202) {
                       // add task status elements
-                      div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>');
+                      div = $('<div id="train_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>');
                       $('#progress').append(div);
 
                       // create a progress bar
@@ -186,8 +184,10 @@
                 // update UI
                 percent = parseInt(data['current'] * 100 / data['total']);
                 nanobar.go(percent);
+                var bar = $('#train_progress')[0]
                 $(status_div.childNodes[1]).text(percent + '%');
                 $(status_div.childNodes[2]).text(data['status']);
+                bar.childNodes[2].style = 'width: 100%;word-break: break-all;white-space: pre-line;'
                 if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
                     if ('result' in data) {
                         // show result
@@ -237,7 +237,6 @@
     <div id="temp_progress">
       <div id="temp_file_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
     </div>
-    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
     <script>
       $('#temp_file').change(function (e) {
          var files = e.target.files;
@@ -286,7 +285,6 @@
     <div id="res_progress">
       <div id="bar_progress" class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div>
     </div>
-    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
     <script>
       $('#pic').change(function (e) {
         // // add task status elements

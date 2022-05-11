@@ -15,15 +15,18 @@ from flask import Flask, request, render_template, session, flash, redirect, \
 from celery import Celery
 import os.path as osp
 from utils import image_to_base64, terminate_process
+from celery.utils.log import get_task_logger
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'top-secret!'
 
 # Celery configuration
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+# app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+# app.config['result_backend'] = 'redis://localhost:6379/0'
+# app.config['broker_transport_options'] = {'visibility_timeout': 18000}  # 5 hours
+# app.config['result_backend_transport_options'] = {'visibility_timeout': 18000}  # 5 hours
+app.config['CELERY_BROKER_URL'] = 'amqp://attnocr:attn3100@localhost:5672/attnocr'
 app.config['result_backend'] = 'redis://localhost:6379/0'
-app.config['broker_transport_options'] = {'visibility_timeout': 18000}  # 5 hours
-app.config['result_backend_transport_options'] = {'visibility_timeout': 18000}  # 5 hours
 
 # Initialize Celery
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
@@ -32,6 +35,8 @@ celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 # celery.conf.broker_transport_options = {'max_retries': 5}
 # celery.conf.worker_max_tasks_per_child = 40
 celery.conf.update(app.config)
+
+logger = get_task_logger(__name__)
 
 
 @celery.task(bind=True)
@@ -54,6 +59,7 @@ def long_task(self):
     #     print(outs)
     # except subprocess.TimeoutExpired:
     #     train.kill()
+    logger.info('celery in')
     from utils import get_train_metrics
     while train.poll() is None:
         # print(train.poll())
@@ -78,14 +84,32 @@ def long_task(self):
                 time.sleep(12)
                 break
             else:
-                left_time = str(log['train_log']['eta'])
-                message = "已运行: " + log['train_log']['running_duration'] + "  (估计剩余时间: " + left_time + "秒)"
-                epoch = int(log['train_log']['train_metrics']['Epoch']) - 1
+                epoch, message = create_train_message(log)
                 self.update_state(state='PROGRESS',
                                   meta={'current': epoch, 'total': 12,
                                         'status': message})
                 time.sleep(2)
-    return {'current': 100, 'total': 100, 'status': '训练完成！'}
+    best_bbox = log['train_log']['best_eval_metrics']['best_bbox']
+    return {'current': 100, 'total': 100, 'status': '训练完成！\n' + '本次训练评分:' + str(best_bbox)}
+
+
+def create_train_message(train_log):
+    eval_epoch = epoch_bbox = best_bbox = 0
+    left_time = str(train_log['train_log']['eta'])
+    train_epoch = train_log['train_log']['train_metrics']['Epoch']
+    epoch = int(train_log['train_log']['train_metrics']['Epoch']) - 1
+    if not train_log['train_log']['eval_metrics'] is None:
+        eval_epoch = train_log['train_log']['eval_metrics']['Epoch']
+        epoch_bbox = train_log['train_log']['eval_metrics']['bbox_mmap']
+    if not train_log['train_log']['best_eval_metrics'] is None:
+        best_bbox = train_log['train_log']['best_eval_metrics']['best_bbox']
+    if eval_epoch == 0:
+        message = '正在进行第 ' + str(train_epoch) + ' 轮训练，共 12 轮\n'
+    else:
+        message = '正在进行第 ' + str(train_epoch) + ' 轮训练，共 12 轮\n' + '已完成 ' + str(eval_epoch) + ' 轮训练，' + '第 ' + str(
+            eval_epoch) + ' 轮训练评分: ' + str(epoch_bbox) + '，本次训练最高评分: ' + str(best_bbox) + '\n'
+    message = message + "已运行: " + train_log['train_log']['running_duration'] + "  (估计剩余时间: " + left_time + "秒)"
+    return epoch, message
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -100,7 +124,7 @@ def upload():
     if request.method == 'POST':
         f = request.files['file']
         # basepath = os.path.dirname(__file__)  # 当前文件所在路径
-        upload_path = '/home/xli/ftp/upload/new_model/'
+        upload_path = '/home/attnroot/ftp/upload/new_model/'
         print(f.filename)
         #######################################
         # 毫秒级时间戳
@@ -140,6 +164,8 @@ def longtask():
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
     task = long_task.AsyncResult(task_id)
+    from utils import get_train_metrics
+    log = get_train_metrics()
     if task.state == 'PENDING':
         response = {
             'state': task.state,
@@ -184,7 +210,7 @@ def stop_longtask():
     active = inspect.active()
     print(active)
     print(longtask)
-    tasks = active['celery@xli-LEGION-REN7000K-26IOB']
+    tasks = active['attnocr@ORC-SVR']
     if len(tasks) > 0:
         task_id = tasks[0]['id']
         task = long_task.AsyncResult(task_id)
@@ -208,7 +234,7 @@ def stop_longtask():
 def ocr_model():
     if request.method == 'POST':
         f = request.files['file']
-        upload_path = '/home/xli/ftp/upload/tmp/'
+        upload_path = '/home/attnroot/ftp/upload/tmp/'
         print(f.filename)
         # 判断文件夹是否存在
         if not os.path.exists(upload_path):
@@ -287,7 +313,7 @@ def upload_temp():
     if request.method == 'POST':
         f = request.files['file']
         # basepath = os.path.dirname(__file__)  # 当前文件所在路径
-        upload_path = '/home/xli/ftp/upload/new_template/'
+        upload_path = '/home/attnroot/ftp/upload/new_template/'
         print(f.filename)
         #######################################
         # 毫秒级时间戳
@@ -315,7 +341,7 @@ def upload_temp():
             print(r.text)
         else:
             print(r.text)
-        distutils.dir_util.copy_tree('/home/xli/ftp/upload/new_template/', '/home/xli/ftp/upload/template/')
+        distutils.dir_util.copy_tree('/home/attnroot/ftp/upload/new_template/', '/home/attnroot/ftp/upload/template/')
         os.remove(save_path)
     return Response(json.dumps(r.text), mimetype='application/json')
 
