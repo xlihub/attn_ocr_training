@@ -210,7 +210,7 @@ def stop_longtask():
     active = inspect.active()
     print(active)
     print(longtask)
-    tasks = active['attnocr@ORC-SVR']
+    tasks = active['attnocr@attnroot-System-Product-Name']
     if len(tasks) > 0:
         task_id = tasks[0]['id']
         task = long_task.AsyncResult(task_id)
