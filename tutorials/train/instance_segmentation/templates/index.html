@@ -324,8 +324,9 @@
                   result.forEach((item, index) =>{
                     var type = item['type']
                     var info = item['info']
+                      var res = result['result']
                     var extra = result['extra']
-                    text += '第' + (index+1) + '张' + '图片\n类型为:' + type + "\n识别结果为:" + info + "\n" + "\n附加信息为:" + extra + "\n"
+                    text += '第' + (index+1) + '张' + '图片\n类型为:' + type + "\n识别结果为:" + res + "\n返回结果为:" + info + "\n" + "\n附加信息为:" + extra + "\n"
                   })
                   $(bar.childNodes[1]).text('100%');
                   $(bar.childNodes[2]).text('识别完成');
@@ -334,8 +335,9 @@
                   console.log(result)
                   var type = result['type']
                   var info = result['info']
+                   var res = result['result']
                   var extra = result['extra']
-                  var text = '图片类型为:' + type + "\n识别结果为:" + info + "\n附加信息为:" + extra
+                  var text = '图片类型为:' + type + "\n识别结果为:" + res + "\n返回结果为:" + info + "\n附加信息为:" + extra
                   $(bar.childNodes[1]).text('100%');
                   $(bar.childNodes[2]).text('识别完成');
                   $(bar.childNodes[3]).text(text);

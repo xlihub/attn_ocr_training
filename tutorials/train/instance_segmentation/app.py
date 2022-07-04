@@ -281,6 +281,7 @@ def ocr_model():
                 else:
                     res = {
                         'type': results[0]['InvoiceType'],
+                        'result': json.dumps(results[0]['InvoiceResult'], ensure_ascii=False),
                         'info': json.dumps(results[0]['InvoiceInfos'], ensure_ascii=False),
                         'extra': json.dumps(results[0]['InvoiceExtra'], ensure_ascii=False)
                     }
@@ -296,6 +297,7 @@ def ocr_model():
                     else:
                         res_dic = {
                             'type': result['InvoiceType'],
+                            'result': json.dumps(results['InvoiceResult'], ensure_ascii=False),
                             'info': json.dumps(result['InvoiceInfos'], ensure_ascii=False),
                             'extra': json.dumps(results['InvoiceExtra'], ensure_ascii=False)
                         }
