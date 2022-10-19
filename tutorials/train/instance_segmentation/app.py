@@ -283,7 +283,12 @@ def ocr_model():
                         'type': results[0]['InvoiceType'],
                         'result': json.dumps(results[0]['InvoiceResult'], ensure_ascii=False),
                         'info': json.dumps(results[0]['InvoiceInfos'], ensure_ascii=False),
-                        'extra': json.dumps(results[0]['InvoiceExtra'], ensure_ascii=False)
+                        'extra': json.dumps(results[0]['InvoiceExtra'], ensure_ascii=False),
+                        'raw_boxes': results[0]['rawBoxes'],
+                        'raw_text': results[0]['rawText'],
+                        'raw_score': results[0]['rawScore'],
+                        'raw_image': raw_image,
+                        'raw_mask': results[0]['rawMask']
                     }
             else:
                 res = []
@@ -299,7 +304,11 @@ def ocr_model():
                             'type': result['InvoiceType'],
                             'result': json.dumps(results['InvoiceResult'], ensure_ascii=False),
                             'info': json.dumps(result['InvoiceInfos'], ensure_ascii=False),
-                            'extra': json.dumps(results['InvoiceExtra'], ensure_ascii=False)
+                            'extra': json.dumps(results['InvoiceExtra'], ensure_ascii=False),
+                            'raw_boxes': results['rawBoxes'],
+                            'raw_text': results['rawText'],
+                            'raw_score': results['rawScore'],
+                            'raw_image': raw_image
                         }
                     res.append(res_dic)
         else:
