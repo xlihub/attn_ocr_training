@@ -124,7 +124,7 @@ def upload():
     if request.method == 'POST':
         f = request.files['file']
         # basepath = os.path.dirname(__file__)  # 当前文件所在路径
-        upload_path = '/home/attnroot/ftp/upload/new_model/'
+        upload_path = '/home/cpard/ftp/upload/new_model/'
         print(f.filename)
         #######################################
         # 毫秒级时间戳
@@ -210,7 +210,7 @@ def stop_longtask():
     active = inspect.active()
     print(active)
     print(longtask)
-    tasks = active['attnocr@attnroot-System-Product-Name']
+    tasks = active['attnocr@cpard-pc']
     if len(tasks) > 0:
         task_id = tasks[0]['id']
         task = long_task.AsyncResult(task_id)
@@ -234,7 +234,7 @@ def stop_longtask():
 def ocr_model():
     if request.method == 'POST':
         f = request.files['file']
-        upload_path = '/home/attnroot/ftp/upload/tmp/'
+        upload_path = '/home/cpard/ftp/upload/tmp/'
         print(f.filename)
         # 判断文件夹是否存在
         if not os.path.exists(upload_path):
@@ -264,6 +264,8 @@ def ocr_model():
         if r.status_code == 200:
             print(r.text)
             results = json.loads(r.text)
+            #  raw_image = image_to_base64(f.filename, upload_path, prefix=preb)
+            raw_image = image_to_base64('raw_image.jpg', '/home/cpard/ppocr/inference_results/', prefix='data:image/jpeg;base64,')
             if len(results) == 1:
                 info = results[0]['InvoiceInfos']
                 if len(info) == 0:
@@ -315,7 +317,7 @@ def upload_temp():
     if request.method == 'POST':
         f = request.files['file']
         # basepath = os.path.dirname(__file__)  # 当前文件所在路径
-        upload_path = '/home/attnroot/ftp/upload/new_template/'
+        upload_path = '/home/cpard/ftp/upload/new_template/'
         print(f.filename)
         #######################################
         # 毫秒级时间戳
@@ -343,7 +345,7 @@ def upload_temp():
             print(r.text)
         else:
             print(r.text)
-        distutils.dir_util.copy_tree('/home/attnroot/ftp/upload/new_template/', '/home/attnroot/ftp/upload/template/')
+        distutils.dir_util.copy_tree('/home/cpard/ftp/upload/new_template/', '/home/cpard/ftp/upload/template/')
         os.remove(save_path)
     return Response(json.dumps(r.text), mimetype='application/json')
 
