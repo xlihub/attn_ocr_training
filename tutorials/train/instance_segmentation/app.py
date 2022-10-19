@@ -264,6 +264,7 @@ def ocr_model():
         if r.status_code == 200:
             print(r.text)
             results = json.loads(r.text)
+            raw_image = image_to_base64('raw_image.jpg', '/home/attnroot/ppocr/inference_results/', prefix='data:image/jpeg;base64,')
             if len(results) == 1:
                 info = results[0]['InvoiceInfos']
                 if len(info) == 0:
